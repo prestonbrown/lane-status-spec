@@ -226,18 +226,18 @@ native tags (v0.27.0). Each is described from source in REFERENCE.md.
 
 ## Unresolved questions
 
-1. The name of this RFC, and of the `afc` compatibility profile.
+1. The name of this RFC, and of the `afc` compatibility profile. ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/2))
 2. Should a status-only producer publish the `afc` profile at all, given every panel button it
-   can't serve must refuse? Or publish only `lane_status`?
+   can't serve must refuse? Or publish only `lane_status`? ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/3))
 3. When a consumer has a native backend for what a status-only producer wraps, should the native
-   backend always win (section 4)?
+   backend always win (section 4)? ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/4))
 4. How `writer` relates to spoolman-lane-sync's existing `source` key, and how ownership of
-   `lane_data` is handed over.
-5. Should a `lane_data` key style be required, or is "ignore the key" enough?
+   `lane_data` is handed over. ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/5))
+5. Should a `lane_data` key style be required, or is "ignore the key" enough? ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/6))
 6. Where the `lane_data` schema should live long term, for example Moonraker's
-   `integrations.md`.
-7. Whether `spool: {tracker, id}` is the right shape for non-Spoolman trackers.
-8. The open questions listed in REFERENCE.md Part C (tag formats and tracker APIs).
+   `integrations.md`. ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/7))
+7. Whether `spool: {tracker, id}` is the right shape for non-Spoolman trackers. ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/8))
+8. The open questions listed in REFERENCE.md Part C (tag formats and tracker APIs). ([discussion](https://github.com/prestonbrown/lane-status-spec/discussions/9))
 
 ## Feedback wanted
 
