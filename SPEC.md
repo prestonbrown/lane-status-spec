@@ -145,7 +145,7 @@ OrcaSlicer's reader.
 | `material` | string | MUST | Matchable type, e.g. `PLA`, `PETG-CF` |
 | `color` | `#RRGGBB` | MUST if loaded | |
 | `nozzle_temp`, `bed_temp` | int, C | SHOULD | |
-| `filament_id` | string | SHOULD | OrcaSlicer's filament id, its preset match key. It names a filament product, not a preset: every per-printer variant of a product, and every user preset derived from one, inherits the product's id. Copy the exact id from Orca's filament library when the spool is in it; otherwise MAY mint one. A producer MUST NOT write an id that more than one product carries, and MUST NOT use it to select a particular preset (that is `slicer_preset`). REFERENCE.md Part B §3 and §7. A numeric value means a Spoolman id (Happy Hare's usage) |
+| `filament_id` | string | SHOULD | OrcaSlicer's filament id, its preset match key. It names a filament product, not a preset: every per-printer variant of a product, and every user preset derived from one, inherits the product's id. Copy the exact id from Orca's filament library when the spool is in it; otherwise MAY mint one. A producer MUST NOT write an id that more than one product carries, and MUST NOT use it to select a particular preset (that is `slicer_preset`). A lane linked to a Spoolman spool takes it from the filament's `orca_filament_id` extra (section 6). A producer MUST NOT write a Bambu `GF*` code here: OrcaSlicer translates those only for Bambu printers, so on this path they never match. It MAY translate one first through Orca's `resources/printers/bambu_filament_ids.json`. REFERENCE.md Part B §3 and §7. A numeric value means a Spoolman id (Happy Hare's usage) |
 | `lss_version`, `writer` | string | MUST | `"0.1"`; producer name |
 | `lane_name` | string | MUST | Joins the record to `lane_status` |
 | `loaded` | bool | MUST | Explicit presence |
@@ -176,6 +176,18 @@ A lane points at a spool; it does not copy a tracker's data model.
   spool, the producer SHOULD copy the tracker's identity fields into the record (`material`,
   `color`, `vendor_name`, `name`, temperatures, weights), as AFC does today. Only the producer
   sets `loaded`.
+- **The slicer id lives on the tracker's filament.** In Spoolman, OrcaSlicer's `filament_id` is
+  a filament extra field with the key `orca_filament_id`, the key spoolman-lane-sync already
+  uses. It goes on the filament, not the spool, because the id names a product. Spoolman stores
+  extra values JSON-encoded, so the text field holds `"\"OGFL99\""`.
+  - A producer whose lane references a Spoolman spool SHOULD copy the filament's
+    `orca_filament_id` into `filament_id`. It takes precedence over an id the producer derives
+    on its own, such as from a built-in catalog, because the tracker wins on identity.
+  - A producer that knows a lane's id from another source MAY write it back to an empty
+    `orca_filament_id`, creating the extra field definition if it is missing (Happy Hare does
+    the same for its own extras). It MUST NOT overwrite a non-empty value.
+  - The rules on `filament_id` in section 5 apply to the extra as well: a string id naming one
+    product, never a `GF*` code passed through untranslated.
 - **Tracker internals stay outside this RFC.** Anything tracker-specific copied into a record
   MUST be vendor-prefixed (section 7).
 - **Tags are physical identity.** An NFC/RFID reading goes in `tag` (`{format, uid, data}`). A

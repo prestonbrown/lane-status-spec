@@ -741,7 +741,7 @@ bodies]:
 
 | Need | Orca uses it for | Who can supply it today |
 |---|---|---|
-| **Orca `filament_id`** (string, `OF…`) | Exact preset: the matcher's first key. Without it, everything falls back to "Generic <type>" | spoolman-lane-sync writes the field, but from a user-filled Spoolman extra that its README fills with Bambu `GF*` codes (which miss on this path). No producer writes a minted `OF…` id. It is **computable on the printer**: `"OF" + base62_6(uuid5(c4d3ff49-4c32-5534-a3e3-00894157ab97, "filament_product/<vendor>/<type>/<name>"))` [V filament_id.md, Minting]. It only resolves if the name equals an Orca preset's base name |
+| **Orca `filament_id`** (string, `OF…`) | Exact preset: the matcher's first key. Without it, everything falls back to "Generic <type>" | spoolman-lane-sync writes the field, but from a user-filled Spoolman extra (`orca_filament_id`) that its README fills with Bambu `GF*` codes (which miss on this path). HelixScreen writes ids copied from Orca's library through its own filament catalog, only for an id exactly one catalog product carries (since v1.1.0-beta.14). No producer writes a minted `OF…` id. It is **computable on the printer**: `"OF" + base62_6(uuid5(c4d3ff49-4c32-5534-a3e3-00894157ab97, "filament_product/<vendor>/<type>/<name>"))` [V filament_id.md, Minting]. It only resolves if the name equals an Orca preset's base name |
 | `setting_id` | A specific preset (user presets). Read in the Bambu path | Bambu only |
 | vendor, product name | Vendor-aware matching (#13719, CFS scoring, Snapmaker vendor match) | Spoolman, RFID tags, CFS, U1 |
 | type + sub-type | Type fallback | Everyone |
@@ -873,7 +873,7 @@ Group 1: fields Orca reads today (the compatibility core).
 | `color` | string | `#RRGGBB` | MUST if loaded | Primary color. MUST be hex: Happy Hare's W3C names (`red`) don't survive Orca's normalizer | yes | A H HH Z S (Mainsail and S write it without `#`) |
 | `nozzle_temp` | int | °C | SHOULD | Recommended nozzle temp. MUST be a JSON number. Orca sends it as `nozzle_temp_max` | yes | A H HH (default 200 when unset). Z deletes it on a spool change |
 | `bed_temp` | int | °C | SHOULD | MUST be a JSON number | yes | A H HH (from Spoolman). Z deletes it on a spool change |
-| `filament_id` | string | | SHOULD | **Orca filament id** (`OF…`), copied from Orca's library or minted as in §3 from `vendor_name`/`filament_type`/`name`. It names a product, not a preset (§3): a producer MUST NOT write an id that more than one product carries. MUST be a string. A numeric value means Spoolman's filament id (Happy Hare's usage); Orca ignores it | yes (string only) | S (HH numeric) |
+| `filament_id` | string | | SHOULD | **Orca filament id** (`OF…`), copied from Orca's library or minted as in §3 from `vendor_name`/`filament_type`/`name`. It names a product, not a preset (§3): a producer MUST NOT write an id that more than one product carries. MUST be a string. A lane linked to a Spoolman spool takes it from the filament extra `orca_filament_id` (SPEC.md §6). A Bambu `GF*` code MUST NOT be written untranslated; Orca's `resources/printers/bambu_filament_ids.json` maps them to `OF…` ids. A numeric value means Spoolman's filament id (Happy Hare's usage); Orca ignores it | yes (string only) | S H (HH numeric) |
 
 Group 2: proposed fields Orca doesn't read yet.
 
@@ -1158,7 +1158,7 @@ or "Not traced", which are listed under Open questions with everything else not 
 | **spoolman-lane-sync** (broncosis) | Reads save_variables `t<n>__spool_id` (Mainsail's convention), else Spoolman `location` = `T<n>` | `material`, `color` (uppercase, no `#`), `vendor`, `name`, `remaining_weight`; `filament_id` and `setting_id` from Spoolman filament extras **`orca_filament_id`**, **`orca_setting_id`** | — | broncosis/spoolman-lane-sync `1660093` `spoolman_lane_sync.py#_spool_to_lane`. It **claims the namespace** with a `lane_data` key `source` = `"spoolman"` and exits if another source holds it (`#_claim_source`) |
 | **SpoolLink** (paxx U1) | Per-channel spool ids in Klipper's `print_task_config.filament_spool_id` (`_ptc_spool_ids`). `_sync_active_spool` pushes the current extruder's channel id into Moonraker's single active spool | Not traced for this survey (Open question 5) | Spoolman spool extra **`card_uids`** (`_parse_card_uids`). Remote methods `spoollink_resolve_spool`, `spoollink_unlink_card` | SnapmakerU1-Extended-Firmware `417e6394` `overlays/firmware-extended/38-feature-spoollink/.../components/spoollink.py`. Open PRs #767 (2026-10-06) and #799 (2026-10-19) move to Spoolman native tags on ≥0.27.0; #799 migrates `card_uids` once. Neither is merged |
 | **zmod_afclite / KILN_AFCLite** | `save_variables` `zmod_afclite_spool_<lane>` / `kiln_afclite_spool_<lane>` | Spool color/material written into the firmware slot | `card_uids`, the SpoolLink convention | DIEHARDave/zmod_afclite `375c86d` `zmod_afclite.py` (`SPOOL_VARIABLE_PREFIX = "zmod_afclite_spool_"`, `CARD_UIDS_FIELD = "card_uids"`, `SAVE_VARIABLE`) and KILN_AFCLite `67aae0d` `extras/kiln_afclite.py` (`SPOOL_VARIABLE_PREFIX = "kiln_afclite_spool_"`, `CARD_UIDS_FIELD`); both READMEs. KILN writes the slot through `IFS_SET_MATERIAL` (README) |
-| **HelixScreen** | `lane_data` `spool_id` (its own records) and Spoolman via `server.spoolman.proxy` | Spoolman filament extra **`pressure_advance`** read as pressure advance | `TagReading::spoolman_id`, set only for an id a tag declares | helixscreen origin/main `11cf6f0f29` `src/api/moonraker_spoolman_api.cpp`, `include/spoolman_types.h#kSpoolmanPaExtraKey`, `include/ams_tag_reading.h#TagReading`, `include/tag_spool_link.h#TagSpoolSighting`; `docs/specs/filament_slots.md` |
+| **HelixScreen** | `lane_data` `spool_id` (its own records) and Spoolman via `server.spoolman.proxy` | Spoolman filament extra **`pressure_advance`** read as pressure advance. `filament_id` comes from its own filament catalog; reading Spoolman's `orca_filament_id` is planned (prestonbrown/helixscreen#2002) | `TagReading::spoolman_id`, set only for an id a tag declares | helixscreen origin/main `11cf6f0f29` `src/api/moonraker_spoolman_api.cpp`, `include/spoolman_types.h#kSpoolmanPaExtraKey`, `include/ams_tag_reading.h#TagReading`, `include/tag_spool_link.h#TagSpoolSighting`; `docs/specs/filament_slots.md` |
 
 Notes:
 - **Pressure advance:** HelixScreen uses the Spoolman **filament** extra `pressure_advance`.
@@ -1166,6 +1166,11 @@ Notes:
   `flow_k`, which only J0eB0l's own AFC fork writes (`BridgeBox` `26c8b8d`: `extras/AFC_autocal.py`
   through `AFC_RFID.py#write_flow_k`, field `SPOOL_EXTRA_FLOW_K`); it is absent from AFC
   `5ea84ea` and `DEV` `993fb45`.
+- **Orca filament id:** spoolman-lane-sync's filament extra `orca_filament_id` is the only
+  Spoolman key for it in use, so SPEC.md §6 adopts that key rather than defining a new one. Its
+  sibling `orca_setting_id` (copied into `setting_id`) is not adopted: a setting id names one
+  preset, which `slicer_preset` covers by name, and Orca's Moonraker agent doesn't read
+  `setting_id`.
 - **Tag UIDs** have three stores in use: Happy Hare's `rfid_tag`, SpoolLink's `card_uids` (also
   written by J0eB0l's AFC fork), and Spoolman's native tag table (≥0.27.0). J0eB0l's AFC fork
   also adds a Spoolman spool extra `tray_uid` for a Bambu reel's identity (`AFC_RFID.py`),
