@@ -134,8 +134,30 @@ the model (REFERENCE.md Part B §7a).
 
 A tag reader that is not the producer MAY publish the same `tags` object in a Klipper object of
 its own named `lane_tags <name>`, with lanes named as the producer names them. Consumers find it
-by that prefix and read it like the producer's. The object also names its own commands for
-settling a pending tag, `assign` (takes `LANE=`) and `cancel`, since Klipper commands are global.
+by that prefix. Since Klipper commands are global, the object also names its own commands for
+settling a pending tag. Its keys, every one present from the first status (section 2.2):
+
+| Key | Type | Meaning |
+|---|---|---|
+| `spec_version` | string | `"0.1"` |
+| `version` | string | The reader module's own version |
+| `tags` | object | The same object as `lane_status.tags` above, read the same way |
+| `assign` | string | The command that ties the pending tag to a lane; it takes `LANE=` with the producer's lane name |
+| `cancel` | string | The command that dismisses the pending tag |
+
+A reader entry in `tags.readers`, here or in `lane_status`, MAY add `port`: where the reader is
+attached (a serial or USB path), or `null`. For example, a single shared reader with a tag
+waiting:
+
+```json
+{"spec_version": "0.1", "version": "0.5.0",
+ "tags": {"readers": {"ff_nfc": {"type": "pn532", "alive": true, "lanes": [],
+                                 "port": "/dev/ttyUSB0"}},
+          "lanes": {},
+          "pending": {"uid": "04A1B2C3D4E5F6",
+                      "spool": {"tracker": "spoolman", "id": "12"}}},
+ "assign": "NFC_ASSIGN", "cancel": "NFC_CANCEL"}
+```
 
 #### 2.5 Filament box environment
 
